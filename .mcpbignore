@@ -1,0 +1,51 @@
+src/
+*.ts
+tsconfig.json
+*.dxt
+*.mcpb
+.claude/
+README.md
+dist/test.js
+dist/test.d.ts
+
+# Dev-only packages (not needed at runtime)
+node_modules/typescript/
+node_modules/tsx/
+node_modules/esbuild/
+node_modules/@esbuild/
+
+# Type definitions (not needed at runtime)
+node_modules/@types/
+
+# Trim bloat from runtime deps
+node_modules/*/test/
+node_modules/*/tests/
+node_modules/*/.github/
+node_modules/*/benchmark/
+node_modules/*/example/
+node_modules/*/examples/
+node_modules/*/*.md
+node_modules/*/*.txt
+node_modules/*/CHANGELOG*
+node_modules/*/HISTORY*
+node_modules/*/LICENSE*
+node_modules/*/license*
+node_modules/*/.prettierrc*
+node_modules/*/.eslintrc*
+node_modules/*/eslint.config*
+node_modules/*/.gitattributes
+node_modules/*/.npmignore
+
+# Zod source/v3/v4 (only need dist)
+node_modules/zod/src/
+node_modules/zod/v3/
+node_modules/zod/v4/
+node_modules/zod/v4-mini/
+node_modules/zod/locales/
+
+# AJV source (only need dist)
+node_modules/ajv/lib/
+node_modules/ajv/src/
+
+# Hono dist bloat
+node_modules/hono/dist/types/

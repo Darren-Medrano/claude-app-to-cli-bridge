@@ -1,0 +1,61 @@
+{
+  "dxt_version": "0.1",
+  "name": "claude-cli-bridge",
+  "display_name": "Claude CLI Bridge",
+  "version": "1.0.0",
+  "description": "Bridge from Claude Desktop to Claude CLI (Claude Code). Delegate coding tasks, run prompts, and manage sessions through your local Claude CLI installation.",
+  "long_description": "This extension connects Claude Desktop (chat, code, and cowork modes) to your locally installed Claude CLI. It lets Claude delegate real software engineering tasks — reading/writing files, running commands, editing code — to Claude Code running on your machine.\n\nTools included:\n* **claude_prompt** — Send a prompt and get a response\n* **claude_code_task** — Delegate full coding tasks with file/terminal access\n* **claude_structured** — Get structured JSON output\n* **claude_continue** — Continue the most recent CLI conversation\n* **claude_resume** — Resume a specific session by ID\n* **claude_status** — Check CLI version and health",
+  "author": {
+    "name": "Claude CLI Bridge"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "claude_prompt",
+      "description": "Send a prompt to Claude CLI in print mode and get the response. For questions, analysis, and content generation."
+    },
+    {
+      "name": "claude_code_task",
+      "description": "Delegate a real coding task to Claude CLI with full tool access (read/write files, run commands, etc). The CLI runs autonomously in the given directory."
+    },
+    {
+      "name": "claude_structured",
+      "description": "Get structured JSON output from Claude CLI. Useful for machine-readable responses."
+    },
+    {
+      "name": "claude_continue",
+      "description": "Continue the most recent Claude CLI conversation in a directory. For multi-step tasks."
+    },
+    {
+      "name": "claude_resume",
+      "description": "Resume a specific Claude CLI session by ID."
+    },
+    {
+      "name": "claude_status",
+      "description": "Check Claude CLI version and health."
+    }
+  ],
+  "keywords": [
+    "claude-code",
+    "cli",
+    "bridge",
+    "coding",
+    "development",
+    "automation"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "platforms": ["darwin"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
