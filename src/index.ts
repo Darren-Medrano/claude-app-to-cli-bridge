@@ -7,6 +7,13 @@ async function main() {
   const server = createServer(backend);
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  const shutdown = () => {
+    server.close().catch(() => {});
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 main().catch((err) => {

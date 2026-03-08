@@ -672,6 +672,170 @@ await test("claude_structured returns only stdout when both stdout and stderr pr
   assert.strictEqual(text, '{"ok":true}', "Should return raw stdout, not stderr");
 });
 
+console.log("\n── claude_status Internals ──");
+
+await test("claude_status: --version call uses correct args and 10s timeout", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setResponse("--version", { stdout: "2.1.71", stderr: "", exitCode: 0 });
+  mock.setResponse("doctor", { stdout: "OK", stderr: "", exitCode: 0 });
+
+  await client.callTool({ name: "claude_status", arguments: {} });
+
+  // Find which call has --version
+  const versionCall = mock.calls.find((c) => c.args.includes("--version"));
+  const doctorCall = mock.calls.find((c) => c.args.includes("doctor"));
+  assert.ok(versionCall, "Should have a --version call");
+  assert.ok(doctorCall, "Should have a doctor call");
+  assert.strictEqual(versionCall.timeoutMs, 10_000, "--version timeout should be 10s");
+  assert.strictEqual(doctorCall.timeoutMs, 15_000, "doctor timeout should be 15s");
+});
+
+await test("claude_status: version empty shows 'unknown'", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setResponse("--version", { stdout: "", stderr: "", exitCode: 1 });
+  mock.setResponse("doctor", { stdout: "All OK", stderr: "", exitCode: 0 });
+
+  const result = await client.callTool({ name: "claude_status", arguments: {} });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.ok(text.includes("unknown"), "Should show 'unknown' when version stdout is empty");
+});
+
+await test("claude_status: doctor falls back to stderr", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setResponse("--version", { stdout: "2.1.71", stderr: "", exitCode: 0 });
+  mock.setResponse("doctor", { stdout: "", stderr: "Doctor failed", exitCode: 1 });
+
+  const result = await client.callTool({ name: "claude_status", arguments: {} });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.ok(text.includes("Doctor failed"), "Should show doctor stderr when stdout empty");
+});
+
+await test("claude_status: doctor shows [no output] when both empty", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setResponse("--version", { stdout: "2.1.71", stderr: "", exitCode: 0 });
+  mock.setResponse("doctor", { stdout: "", stderr: "", exitCode: 0 });
+
+  const result = await client.callTool({ name: "claude_status", arguments: {} });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.ok(text.includes("[no output]"), "Should show [no output] when doctor has no output");
+});
+
+console.log("\n── Security: Negative Assertions ──");
+
+await test("claude_prompt does NOT include --dangerously-skip-permissions", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({
+    name: "claude_prompt",
+    arguments: { prompt: "Hello", model: "opus", allowedTools: ["Bash"] },
+  });
+  const call = mock.calls[0];
+  assert.ok(!call.args.includes("--dangerously-skip-permissions"), "claude_prompt must NOT skip permissions");
+});
+
+await test("claude_structured does NOT include --dangerously-skip-permissions", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({
+    name: "claude_structured",
+    arguments: { prompt: "Get data", model: "sonnet" },
+  });
+  const call = mock.calls[0];
+  assert.ok(!call.args.includes("--dangerously-skip-permissions"), "claude_structured must NOT skip permissions");
+});
+
+console.log("\n── Arg Ordering: continue/resume/structured ──");
+
+await test("claude_continue: prompt is last arg, --print is first", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({
+    name: "claude_continue",
+    arguments: { prompt: "Next step", workingDirectory: "/tmp" },
+  });
+  const call = mock.calls[0];
+  assert.strictEqual(call.args[0], "--print", "--print should be first arg");
+  assert.strictEqual(call.args[call.args.length - 1], "Next step", "Prompt should be last arg");
+  assert.ok(call.args.includes("--dangerously-skip-permissions"), "Should include --dangerously-skip-permissions");
+});
+
+await test("claude_resume: prompt is last arg, --print is first, session ID follows --resume", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({
+    name: "claude_resume",
+    arguments: { sessionId: "abc-123", prompt: "Continue", workingDirectory: "/tmp" },
+  });
+  const call = mock.calls[0];
+  assert.strictEqual(call.args[0], "--print", "--print should be first arg");
+  assert.strictEqual(call.args[call.args.length - 1], "Continue", "Prompt should be last arg");
+  const resumeIdx = call.args.indexOf("--resume");
+  assert.strictEqual(call.args[resumeIdx + 1], "abc-123", "Session ID should follow --resume");
+  assert.ok(call.args.includes("--dangerously-skip-permissions"), "Should include --dangerously-skip-permissions");
+});
+
+await test("claude_code_task: task is the absolute last arg", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({
+    name: "claude_code_task",
+    arguments: { task: "Deploy it", workingDirectory: "/tmp", model: "opus", maxBudgetUsd: 5 },
+  });
+  const call = mock.calls[0];
+  assert.strictEqual(call.args[call.args.length - 1], "Deploy it", "Task should be the absolute last arg");
+});
+
+console.log("\n── formatResult Additional Combos ──");
+
+await test("formatResult: only stdout with non-zero exit code", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "partial output", stderr: "", exitCode: 2 });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.ok(text.includes("partial output"), "Should include stdout");
+  assert.ok(text.includes("[exit code: 2]"), "Should include exit code");
+  assert.ok(!text.includes("[stderr]"), "Should NOT include stderr section");
+});
+
+await test("formatResult: only stderr with exit code 0", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "warning only", exitCode: 0 });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.ok(text.includes("[stderr]"), "Should include stderr section");
+  assert.ok(text.includes("warning only"), "Should include stderr content");
+  assert.ok(!text.includes("[exit code"), "Should NOT include exit code for 0");
+});
+
+await test("formatResult: both empty with non-zero exit code", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "", exitCode: 2 });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.strictEqual(text, "[exit code: 2]", "Should be only the exit code");
+});
+
+console.log("\n── claude_structured Edge Cases ──");
+
+await test("claude_structured: both empty returns [no output]", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "", exitCode: 0 });
+  const result = await client.callTool({ name: "claude_structured", arguments: { prompt: "Test" } });
+  const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+  assert.strictEqual(text, "[no output]", "Should return [no output] when both empty");
+});
+
+console.log("\n── Default Working Directory ──");
+
+await test("claude_prompt defaults cwd to homedir", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({ name: "claude_prompt", arguments: { prompt: "Hello" } });
+  const { homedir } = await import("os");
+  assert.strictEqual(mock.calls[0].cwd, homedir(), "Should default to homedir()");
+});
+
+await test("claude_resume defaults cwd to homedir (strict)", async () => {
+  const { client, mock } = await createTestEnv();
+  await client.callTool({ name: "claude_resume", arguments: { sessionId: "s1", prompt: "Go" } });
+  const { homedir } = await import("os");
+  assert.strictEqual(mock.calls[0].cwd, homedir(), "Should default to homedir()");
+});
+
 // ── Summary ─────────────────────────────────────────────────────────
 
 console.log(`\n${"─".repeat(50)}`);

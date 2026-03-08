@@ -3,3 +3,6 @@ dist/
 *.mcpb
 *.dxt
 .claude/
+.DS_Store
+.env
+*.tsbuildinfo

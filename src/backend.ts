@@ -38,11 +38,17 @@ export class RealClaudeBackend implements ClaudeBackend {
       const env = { ...process.env };
       delete env.CLAUDECODE;
 
-      const proc = spawn(this.cliBin, args, {
-        cwd,
-        env,
-        stdio: ["pipe", "pipe", "pipe"],
-      });
+      let proc;
+      try {
+        proc = spawn(this.cliBin, args, {
+          cwd,
+          env,
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+      } catch (err) {
+        res({ stdout: "", stderr: err instanceof Error ? err.message : String(err), exitCode: 1 });
+        return;
+      }
 
       let stdout = "";
       let stderr = "";
@@ -68,7 +74,7 @@ export class RealClaudeBackend implements ClaudeBackend {
       });
 
       proc.on("error", (err) => {
-        done({ stdout, stderr: err.message, exitCode: 1 });
+        done({ stdout, stderr: stderr + (stderr ? "\n" : "") + err.message, exitCode: 1 });
       });
     });
   }
