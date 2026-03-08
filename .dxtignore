@@ -36,11 +36,8 @@ node_modules/*/eslint.config*
 node_modules/*/.gitattributes
 node_modules/*/.npmignore
 
-# Zod source/v3/v4 (only need dist)
+# Zod bloat (keep v3/, v4/, v4-mini/ — MCP SDK imports from all of them)
 node_modules/zod/src/
-node_modules/zod/v3/
-node_modules/zod/v4/
-node_modules/zod/v4-mini/
 node_modules/zod/locales/
 
 # AJV source (only need dist)
