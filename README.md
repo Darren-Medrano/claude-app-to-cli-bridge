@@ -51,7 +51,7 @@ Then restart Claude Desktop.
 ```bash
 npm install
 npm run build    # Compile TypeScript
-npm test         # Run 47 tests (InMemoryTransport, no CLI needed)
+npm test         # Run 62 tests (InMemoryTransport, no CLI needed)
 npm start        # Start the stdio server
 ```
 

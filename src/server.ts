@@ -50,7 +50,10 @@ export function createServer(backend: ClaudeBackend): McpServer {
       args.push("--print", prompt);
 
       const result = await backend.execute(args, cwd, timeout);
-      return { content: [{ type: "text" as const, text: formatResult(result) }] };
+      return {
+        content: [{ type: "text" as const, text: formatResult(result) }],
+        isError: result.exitCode !== 0 && result.exitCode !== null,
+      };
     }
   );
 
@@ -79,7 +82,10 @@ export function createServer(backend: ClaudeBackend): McpServer {
       args.push("--print", "--dangerously-skip-permissions", task);
 
       const result = await backend.execute(args, workingDirectory, timeout);
-      return { content: [{ type: "text" as const, text: formatResult(result) }] };
+      return {
+        content: [{ type: "text" as const, text: formatResult(result) }],
+        isError: result.exitCode !== 0 && result.exitCode !== null,
+      };
     }
   );
 
@@ -104,7 +110,10 @@ export function createServer(backend: ClaudeBackend): McpServer {
       args.push("--print", "--output-format", "json", prompt);
 
       const result = await backend.execute(args, cwd, timeout);
-      return { content: [{ type: "text" as const, text: result.stdout || result.stderr || "[no output]" }] };
+      return {
+        content: [{ type: "text" as const, text: result.stdout || result.stderr || "[no output]" }],
+        isError: result.exitCode !== 0 && result.exitCode !== null,
+      };
     }
   );
 
@@ -122,7 +131,10 @@ export function createServer(backend: ClaudeBackend): McpServer {
       const args = ["--print", "--continue", "--dangerously-skip-permissions", prompt];
 
       const result = await backend.execute(args, workingDirectory, timeout);
-      return { content: [{ type: "text" as const, text: formatResult(result) }] };
+      return {
+        content: [{ type: "text" as const, text: formatResult(result) }],
+        isError: result.exitCode !== 0 && result.exitCode !== null,
+      };
     }
   );
 
@@ -142,7 +154,10 @@ export function createServer(backend: ClaudeBackend): McpServer {
       const args = ["--print", "--resume", sessionId, "--dangerously-skip-permissions", prompt];
 
       const result = await backend.execute(args, cwd, timeout);
-      return { content: [{ type: "text" as const, text: formatResult(result) }] };
+      return {
+        content: [{ type: "text" as const, text: formatResult(result) }],
+        isError: result.exitCode !== 0 && result.exitCode !== null,
+      };
     }
   );
 

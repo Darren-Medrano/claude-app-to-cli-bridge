@@ -1,5 +1,5 @@
 {
-  "name": "claude-app-to-cli-bridge",
+  "name": "claude-cli-bridge",
   "version": "1.0.0",
   "description": "MCP server bridge from Claude Desktop app to Claude CLI",
   "main": "dist/index.js",
@@ -9,7 +9,7 @@
     "test": "tsx src/test.ts"
   },
   "keywords": ["mcp", "claude", "cli", "bridge"],
-  "author": "",
+  "author": "Claude CLI Bridge",
   "license": "MIT",
   "type": "module",
   "dependencies": {

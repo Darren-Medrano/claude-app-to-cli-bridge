@@ -8,6 +8,10 @@
   "author": {
     "name": "Claude CLI Bridge"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Darren-Medrano/claude-app-to-cli-bridge"
+  },
   "server": {
     "type": "node",
     "entry_point": "dist/index.js",

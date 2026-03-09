@@ -836,6 +836,69 @@ await test("claude_resume defaults cwd to homedir (strict)", async () => {
   assert.strictEqual(mock.calls[0].cwd, homedir(), "Should default to homedir()");
 });
 
+console.log("\n── isError Flag ──");
+
+await test("claude_prompt: isError is true when exit code is non-zero", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "fail", exitCode: 1 });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  assert.strictEqual(result.isError, true, "isError should be true for exit code 1");
+});
+
+await test("claude_prompt: isError is false when exit code is 0", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "ok", stderr: "", exitCode: 0 });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  assert.strictEqual(result.isError, false, "isError should be false for exit code 0");
+});
+
+await test("claude_prompt: isError is false when exit code is null (timeout)", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "timeout", exitCode: null });
+  const result = await client.callTool({ name: "claude_prompt", arguments: { prompt: "Test" } });
+  assert.strictEqual(result.isError, false, "isError should be false for null exit code");
+});
+
+await test("claude_code_task: isError is true when exit code is non-zero", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "error", exitCode: 2 });
+  const result = await client.callTool({
+    name: "claude_code_task",
+    arguments: { task: "Fail", workingDirectory: "/tmp" },
+  });
+  assert.strictEqual(result.isError, true, "isError should be true for exit code 2");
+});
+
+await test("claude_structured: isError is true when exit code is non-zero", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "parse error", exitCode: 1 });
+  const result = await client.callTool({
+    name: "claude_structured",
+    arguments: { prompt: "Get data" },
+  });
+  assert.strictEqual(result.isError, true, "isError should be true for exit code 1");
+});
+
+await test("claude_continue: isError is true when exit code is non-zero", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "fail", exitCode: 1 });
+  const result = await client.callTool({
+    name: "claude_continue",
+    arguments: { prompt: "Next", workingDirectory: "/tmp" },
+  });
+  assert.strictEqual(result.isError, true, "isError should be true for exit code 1");
+});
+
+await test("claude_resume: isError is true when exit code is non-zero", async () => {
+  const { client, mock } = await createTestEnv();
+  mock.setDefaultResponse({ stdout: "", stderr: "fail", exitCode: 1 });
+  const result = await client.callTool({
+    name: "claude_resume",
+    arguments: { sessionId: "s1", prompt: "Go" },
+  });
+  assert.strictEqual(result.isError, true, "isError should be true for exit code 1");
+});
+
 // ── Summary ─────────────────────────────────────────────────────────
 
 console.log(`\n${"─".repeat(50)}`);
